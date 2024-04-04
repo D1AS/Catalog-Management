@@ -26,7 +26,8 @@ public class PacksController : ControllerBase
     }
 
     [HttpPost(ApiEndPoints.Packs.Create)]
-    [Authorize(AuthConstants.AdminUserPolicyName)]
+    //[Authorize(AuthConstants.AdminUserPolicyName)]
+    [ServiceFilter(typeof(ApiKeyAuthFilter))]
     [ProducesResponseType(typeof(PackResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody]CreatePackRequest request,
