@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Packs.Api.Auth;
 using Packs.Api.Mapping;
 using Packs.Application.Models;
@@ -16,17 +17,20 @@ namespace Packs.Api.Controllers;
 public class PacksController : ControllerBase
 {
     private readonly IPackService _packService;
+    private readonly IOutputCacheStore _outputCacheStore;
 
-    public PacksController(IPackService packService)
+    public PacksController(IPackService packService, IOutputCacheStore outputCacheStore)
     {
         _packService = packService;
+        _outputCacheStore = outputCacheStore;
     }
 
     [HttpPost(ApiEndPoints.Packs.Create)]
     [Authorize(AuthConstants.AdminUserPolicyName)]
     [ProducesResponseType(typeof(PackResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody]CreatePackRequest request)
+    public async Task<IActionResult> Create([FromBody]CreatePackRequest request,
+        CancellationToken token)
     {
         var pack = request.MapToPack();
         var result = await _packService.CreateAsync(pack);
@@ -34,11 +38,14 @@ public class PacksController : ControllerBase
         {
             return BadRequest(new { Pack = pack.Id, Category = pack.Category, Message = "Pack already exists." });
         }
+        await _outputCacheStore.EvictByTagAsync("packs", token);
+        var packResponse = pack.MapToResponse();
+        return CreatedAtAction(nameof(Get), new { id = pack.Id }, packResponse);
 
-        return CreatedAtAction(nameof(Get), new { id = pack.Id }, pack);
     }
 
     [HttpGet(ApiEndPoints.Packs.Get)]
+    [OutputCache(PolicyName = "PackCache")]
     [ProducesResponseType(typeof(PackResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get([FromRoute]string id)
@@ -54,6 +61,7 @@ public class PacksController : ControllerBase
     }
 
     [HttpGet(ApiEndPoints.Packs.GetAll)]
+    [OutputCache(PolicyName = "PackCache")]
     [ProducesResponseType(typeof(PacksResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery]GetAllPacksRequest request)
     {
@@ -71,7 +79,8 @@ public class PacksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update([FromRoute] string id,
-        [FromBody] UpdatePackRequest request)
+        [FromBody] UpdatePackRequest request,
+        CancellationToken token)
     {
         var pack = request.MapToPack(id);
         var updatedPack = await _packService.UpdateAsync(pack);
@@ -80,6 +89,7 @@ public class PacksController : ControllerBase
             return NotFound();
         }
 
+        await _outputCacheStore.EvictByTagAsync("packs", token);
         var response = updatedPack.MapToResponse();
         return Ok(response);
     }
