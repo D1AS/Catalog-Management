@@ -7,6 +7,7 @@ using Packs.Application.Models;
 using Packs.Application.Repositories;
 using Packs.Application.Services;
 using Packs.Contracts.Requests;
+using Packs.Contracts.Responses;
 
 namespace Packs.Api.Controllers;
 
@@ -21,8 +22,10 @@ public class PacksController : ControllerBase
         _packService = packService;
     }
 
-    [Authorize(AuthConstants.AdminUserPolicyName)]
     [HttpPost(ApiEndPoints.Packs.Create)]
+    [Authorize(AuthConstants.AdminUserPolicyName)]
+    [ProducesResponseType(typeof(PackResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody]CreatePackRequest request)
     {
         var pack = request.MapToPack();
@@ -36,6 +39,8 @@ public class PacksController : ControllerBase
     }
 
     [HttpGet(ApiEndPoints.Packs.Get)]
+    [ProducesResponseType(typeof(PackResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get([FromRoute]string id)
     {
         var pack = await _packService.GetByIdAsync(id);
@@ -49,6 +54,7 @@ public class PacksController : ControllerBase
     }
 
     [HttpGet(ApiEndPoints.Packs.GetAll)]
+    [ProducesResponseType(typeof(PacksResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery]GetAllPacksRequest request)
     {
         var options = request.MapToOptions();
@@ -59,8 +65,11 @@ public class PacksController : ControllerBase
         return Ok(packsResponse);
     }
 
-    [Authorize(AuthConstants.TrustedMemberPolicyName)]
     [HttpPut(ApiEndPoints.Packs.Update)]
+    [Authorize(AuthConstants.TrustedMemberPolicyName)]
+    [ProducesResponseType(typeof(PackResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update([FromRoute] string id,
         [FromBody] UpdatePackRequest request)
     {
