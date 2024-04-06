@@ -4,7 +4,7 @@
 A skeleton project for App Store game Catalog Management showcasing best practices building a Web Api using .NET 7.<br />
 (An in memory db is used for simplicity reasons).
 
-Points:
+Points of interest:
 
     • Separation of concerns by spiting the web api to three layers, api, application (business logic) and contracts
     • Crud operations (minus deletion – a game pack Never gets deleted, only deactivated)
