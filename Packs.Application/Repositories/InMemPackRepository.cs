@@ -74,7 +74,7 @@ public class InMemPackRepository : IPackRepository
         _packs.Add(pack);
         return Task.FromResult(true);
     }
-
+    
     public Task<bool> ExistsByIdAsync(string id)
     {
         var result = _packs.Exists(x => x.Id == id);

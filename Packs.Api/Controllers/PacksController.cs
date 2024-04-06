@@ -26,15 +26,15 @@ public class PacksController : ControllerBase
     }
 
     [HttpPost(ApiEndPoints.Packs.Create)]
-    //[Authorize(AuthConstants.AdminUserPolicyName)]
-    [ServiceFilter(typeof(ApiKeyAuthFilter))]
+    [Authorize(AuthConstants.AdminUserPolicyName)]
+    //[ServiceFilter(typeof(ApiKeyAuthFilter))]
     [ProducesResponseType(typeof(PackResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationFailureResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody]CreatePackRequest request,
         CancellationToken token)
     {
         var pack = request.MapToPack();
-        var result = await _packService.CreateAsync(pack);
+        var result = await _packService.CreateAsync(pack, token);
         if (result is null)
         {
             return BadRequest(new { Pack = pack.Id, Category = pack.Category, Message = "Pack already exists." });
@@ -49,9 +49,9 @@ public class PacksController : ControllerBase
     [OutputCache(PolicyName = "PackCache")]
     [ProducesResponseType(typeof(PackResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get([FromRoute]string id)
+    public async Task<IActionResult> Get([FromRoute]string id, CancellationToken token = default)
     {
-        var pack = await _packService.GetByIdAsync(id);
+        var pack = await _packService.GetByIdAsync(id, token);
         if (pack is null)
         {
             return NotFound();
@@ -64,11 +64,11 @@ public class PacksController : ControllerBase
     [HttpGet(ApiEndPoints.Packs.GetAll)]
     [OutputCache(PolicyName = "PackCache")]
     [ProducesResponseType(typeof(PacksResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll([FromQuery]GetAllPacksRequest request)
+    public async Task<IActionResult> GetAll([FromQuery]GetAllPacksRequest request, CancellationToken token = default)
     {
         var options = request.MapToOptions();
 
-        var packs = await _packService.GetAllAsync(options);
+        var packs = await _packService.GetAllAsync(options, token);
 
         var packsResponse = packs.MapToResponse();
         return Ok(packsResponse);
@@ -84,7 +84,7 @@ public class PacksController : ControllerBase
         CancellationToken token)
     {
         var pack = request.MapToPack(id);
-        var updatedPack = await _packService.UpdateAsync(pack);
+        var updatedPack = await _packService.UpdateAsync(pack, token);
         if (updatedPack is null)
         {
             return NotFound();
